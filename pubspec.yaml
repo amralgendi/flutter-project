@@ -44,8 +44,7 @@ dependencies:
   validators: ^3.0.0
   uuid: ^4.5.1
   barcode_scan2: ^4.2.0
-  dio: ^5.7.2
-
+  dio: ^5.7.0
 
 dev_dependencies:
   flutter_test:
