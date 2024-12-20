@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hedieaty/home/data/wishlists/models/gift.dart';
+import 'package:hedieaty/notification_managet/notification_manager.dart';
 import 'package:hedieaty/onboarding/managers/user_session_manager.dart';
 import 'dart:math';
 
@@ -199,28 +200,40 @@ class _WishlistScreenState extends State<WishlistScreen> {
                 children: [
                   ElevatedButton(
                     onPressed: () async {
-                      // Action when the user chooses to pledge
+                      try {
+                        // Action when the user chooses to pledge
 
-                      final updatedGift = Gift(
-                          category: gift.category,
-                          description: gift.description,
-                          id: gift.id,
-                          name: gift.name,
-                          price: gift.price,
-                          userId: gift.userId,
-                          wishlistId: gift.wishlistId,
-                          imageBase64: gift.imageBase64,
-                          pledgedBy: UserSessionManager.instance
-                              .getCurrentUser()!
-                              .uid);
+                        final updatedGift = Gift(
+                            category: gift.category,
+                            description: gift.description,
+                            id: gift.id,
+                            name: gift.name,
+                            price: gift.price,
+                            userId: gift.userId,
+                            wishlistId: gift.wishlistId,
+                            imageBase64: gift.imageBase64,
+                            pledgedBy: UserSessionManager.instance
+                                .getCurrentUser()!
+                                .uid);
 
-                      await FirebaseFirestore.instance
-                          .collection("gifts")
-                          .doc(updatedGift.id)
-                          .update(updatedGift.toMap());
+                        await FirebaseFirestore.instance
+                            .collection("gifts")
+                            .doc(updatedGift.id)
+                            .update(updatedGift.toMap());
 
-                      Navigator.pop(context);
-                      _showConfirmationDialog(context);
+                        await NotificationManager.instance.sendNotification(
+                            updatedGift.userId,
+                            "YAY! YOUR GIFT WAS PLEDGED!",
+                            "OPEN THE APP AND CHECK YOUR PLEDGED APP");
+
+                        Navigator.pop(context);
+
+                        _showConfirmationDialog(context);
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('error $e')),
+                        );
+                      }
                     },
                     child: const Text('Pledge'),
                   ),

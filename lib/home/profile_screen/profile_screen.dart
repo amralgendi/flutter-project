@@ -5,6 +5,7 @@ import 'package:hedieaty/home/profile_settings_screen/profile_settings_screen.da
 import 'package:hedieaty/onboarding/managers/user_session_manager.dart';
 import 'package:hedieaty/onboarding/welcome_screen.dart';
 
+import '../../notification_managet/notification_manager.dart';
 import '../data/users/models/user.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -34,6 +35,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             TextButton(
               onPressed: () async {
+                await NotificationManager.instance.dispose();
+
                 Navigator.of(context).pop(); // Close the dialog
                 await UserSessionManager.instance.signOut();
                 Navigator.pushAndRemoveUntil(
