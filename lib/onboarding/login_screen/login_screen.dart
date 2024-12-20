@@ -4,7 +4,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hedieaty/home/base_tab_screen.dart';
 import 'package:hedieaty/onboarding/managers/user_session_manager.dart';
 import 'package:hedieaty/onboarding/signup_screen/signup_screen.dart';
-import 'package:provider/provider.dart'; // Import provider to use ChangeNotifierProvider
 import 'package:validators/validators.dart'; // Import validator package
 
 class LoginScreen extends StatelessWidget {

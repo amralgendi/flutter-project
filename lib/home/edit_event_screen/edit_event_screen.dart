@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -16,6 +17,8 @@ class _EditEventScreenState extends State<EditEventScreen> {
   late TextEditingController _nameController;
   late TextEditingController _dateController;
   late TextEditingController _categoryController;
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -66,6 +69,12 @@ class _EditEventScreenState extends State<EditEventScreen> {
                   category: _categoryController.text,
                   userId: widget.event.userId,
                 );
+
+                await _firestore
+                    .collection('events')
+                    .doc(updatedEvent.id)
+                    .update(updatedEvent.toMap());
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Updated')),
                 );

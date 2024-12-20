@@ -29,9 +29,18 @@ class UserSessionManager {
     }
   }
 
+  Future<bool> phoneNumberExists(String phoneNumber) async {
+    final res = await FirebaseFirestore.instance
+        .collection('users')
+        .where("phoneNumber", isEqualTo: phoneNumber)
+        .get();
+
+    return res.size > 0;
+  }
+
   // Sign up a new user
-  Future<User?> signUpWithEmailPassword(
-      String email, String password, Map<String, dynamic> userData) async {
+  Future<User?> signUp(
+      String email, String password, String name, String phoneNumber) async {
     try {
       final UserCredential userCredential =
           await _firebaseAuth.createUserWithEmailAndPassword(
@@ -42,7 +51,16 @@ class UserSessionManager {
 
       // Save additional user data to Firestore after signup
       if (user != null) {
-        await _usersFirestoreManager.saveUserData(user.uid, userData);
+        final fireStoreUser = {
+          "name": name,
+          "email": email,
+          "phoneNumber": phoneNumber,
+          "followers": [],
+        };
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .set(fireStoreUser);
       }
       return user;
     } catch (e) {
@@ -70,7 +88,7 @@ class UserSessionManager {
   }
 
   // Get the current logged-in user
-  Future<User?> getCurrentUser() async {
+  User? getCurrentUser() {
     try {
       return _firebaseAuth.currentUser;
     } catch (e) {

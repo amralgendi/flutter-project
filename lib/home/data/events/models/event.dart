@@ -3,7 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Event {
   final String id;
   final String name;
-  final String date; // Keep date as a string (or you can convert it to DateTime)
+  final String
+      date; // Keep date as a string (or you can convert it to DateTime)
   final String category;
   final String userId;
 
@@ -35,7 +36,6 @@ class Event {
   // Convert Event object to a Map for Firestore
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'name': name,
       'date': date,
       'category': category,

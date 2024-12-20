@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:hedieaty/onboarding/managers/user_session_manager.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hedieaty/home/data/wishlists/models/gift.dart';
 import 'package:hedieaty/home/data/wishlists/models/wishlist.dart';
@@ -36,9 +38,21 @@ class _EditWishlistScreenState extends State<EditWishlistScreen> {
     super.initState();
     // Initialize the controllers based on the existing wishlist
     _wishlistNameController.text = widget.wishlist.name;
-    for (var gift in widget.wishlist.gifts) {
-      _giftControllers.add(GiftController.fromGift(gift));
+    _loadGifts();
+  }
+
+  void _loadGifts() async {
+    var giftDocs = await FirebaseFirestore.instance
+        .collection("gifts")
+        .where("wishlistId", isEqualTo: widget.wishlist.id)
+        .get();
+
+    print(giftDocs.docs.length);
+
+    for (var doc in giftDocs.docs) {
+      _giftControllers.add(GiftController.fromGift(Gift.FromDocument(doc)));
     }
+    setState(() {});
   }
 
   // Function to add a new gift field
@@ -166,7 +180,7 @@ class _EditWishlistScreenState extends State<EditWishlistScreen> {
   }
 
   // Function to update the wishlist
-  void _updateWishlist() {
+  void _updateWishlist() async {
     final wishlistName = _wishlistNameController.text;
 
     if (wishlistName.isEmpty || _giftControllers.isEmpty) {
@@ -190,23 +204,48 @@ class _EditWishlistScreenState extends State<EditWishlistScreen> {
       return;
     }
 
+    final alreadyExistingGifts = await FirebaseFirestore.instance
+        .collection("gifts")
+        .where("wishlistId", isEqualTo: widget.wishlist.id)
+        .get();
+
     // Process the updated wishlist and gifts
     final gifts = _giftControllers.map((controller) {
       return Gift(
         id: const Uuid().v4(),
+        userId: UserSessionManager.instance.getCurrentUser()!.uid,
+        wishlistId: widget.wishlist.id,
         name: controller.nameController.text,
+        imageBase64: controller.imageBase64,
         description: controller.descriptionController.text,
         price: double.tryParse(controller.priceController.text) ?? 0,
         category: controller.selectedCategory,
-        imageBase64: controller.imageBase64,
       );
     }).toList();
 
-    final updatedWishlist = Wishlist(
-      id: const Uuid().v4(),
-      name: wishlistName,
-      gifts: gifts,
-    );
+    final addBatch = FirebaseFirestore.instance.batch();
+
+    DocumentReference ref =
+        FirebaseFirestore.instance.collection('gifts').doc();
+    for (Gift gift in gifts) {
+      addBatch.set(ref, gift.toMap());
+    }
+
+    await addBatch.commit();
+
+    await FirebaseFirestore.instance
+        .collection("wishlists")
+        .doc(widget.wishlist.id)
+        .update({
+      "giftCount": gifts.length,
+      "name": _wishlistNameController.text.trim()
+    });
+
+    WriteBatch deleteBatch = FirebaseFirestore.instance.batch();
+    for (var doc in alreadyExistingGifts.docs) {
+      deleteBatch.delete(doc.reference);
+    }
+    await deleteBatch.commit();
 
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(

@@ -1,7 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../data/users/models/user.dart';
+
 class ProfileSettingsScreen extends StatefulWidget {
-  const ProfileSettingsScreen({super.key});
+  final User user;
+  const ProfileSettingsScreen({super.key, required this.user});
 
   @override
   _ProfileSettingsScreenState createState() => _ProfileSettingsScreenState();
@@ -15,17 +19,26 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   void initState() {
     super.initState();
     // Initialize with default values or fetch from a data source
-    _nameController.text = "John Doe"; // Example placeholder for the user's name
+    _nameController.text =
+        widget.user.name; // Example placeholder for the user's name
   }
 
-  void _saveSettings() {
+  void _saveSettings() async {
     // Save updated settings
     final updatedName = _nameController.text;
     final notificationsEnabled = _notificationsEnabled;
 
-    // Here you would typically save the settings to a database or backend service
-    print('Updated Name: $updatedName');
-    print('Notifications Enabled: $notificationsEnabled');
+    User updatedUser = User(
+        email: widget.user.email,
+        followers: widget.user.followers,
+        id: widget.user.id,
+        name: updatedName,
+        phoneNumber: widget.user.phoneNumber);
+
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(widget.user.id)
+        .update(updatedUser.toMap());
 
     // Show confirmation message
     ScaffoldMessenger.of(context).showSnackBar(

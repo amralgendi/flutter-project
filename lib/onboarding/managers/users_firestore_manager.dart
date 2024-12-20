@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UsersFirestoreManager {
@@ -7,7 +6,10 @@ class UsersFirestoreManager {
   // Save or update user data in Firestore
   Future<void> saveUserData(String uid, Map<String, dynamic> userData) async {
     try {
-      await _firestore.collection('users').doc(uid).set(userData, SetOptions(merge: true));
+      await _firestore
+          .collection('users')
+          .doc(uid)
+          .set(userData, SetOptions(merge: true));
     } catch (e) {
       throw Exception("Failed to save user data: $e");
     }

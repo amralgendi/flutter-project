@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hedieaty/home/add_friend_screen/add_friend_screen.dart';
 import 'package:hedieaty/home/create_event_screen/create_event_screen.dart';
+import 'package:hedieaty/home/data/users/models/user.dart';
+import 'package:hedieaty/onboarding/managers/user_session_manager.dart';
 import '../create_wishlist_screen/create_wishlist_screen.dart';
 import '../friend_details/friend_details_screen.dart';
 
@@ -12,8 +15,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _isSearching = false; // Tracks whether the user is in search mode
-  TextEditingController _searchController = TextEditingController(); // Controller for search input
+  bool _isSearching = false;
+  TextEditingController _searchController = TextEditingController();
+
+  List<User> followedUsers = [];
 
   // Mock search results
   List<Map<String, String>> searchResults = [
@@ -25,10 +30,35 @@ class _HomeScreenState extends State<HomeScreen> {
   // Filtered list based on search query
   List<Map<String, String>> filteredResults = [];
 
+  _loadFollowers() async {
+    String? userId = UserSessionManager.instance.getCurrentUser()?.uid;
+
+    DocumentSnapshot doc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+
+    if (!doc.exists) return;
+
+    final user = User.fromDocument(doc);
+
+    if (user.followers.isEmpty) return;
+
+    final followedUserDocs = await FirebaseFirestore.instance
+        .collection('users')
+        .where(FieldPath.documentId, whereIn: user.followers)
+        .get();
+
+    setState(() {
+      followedUsers =
+          followedUserDocs.docs.map((d) => User.fromDocument(d)).toList();
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     filteredResults = searchResults; // Initially show all results
+
+    _loadFollowers();
   }
 
   // Update the filtered list when searching
@@ -36,8 +66,8 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       filteredResults = searchResults
           .where((result) =>
-      result["gift"]!.toLowerCase().contains(query.toLowerCase()) ||
-          result["friend"]!.toLowerCase().contains(query.toLowerCase()))
+              result["gift"]!.toLowerCase().contains(query.toLowerCase()) ||
+              result["friend"]!.toLowerCase().contains(query.toLowerCase()))
           .toList();
     });
   }
@@ -48,16 +78,16 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: _isSearching
             ? TextField(
-          controller: _searchController,
-          autofocus: true,
-          onChanged: _updateSearchResults,
-          // style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: 'Search friend gifts...',
-            hintStyle: TextStyle(color: Colors.white70),
-            border: InputBorder.none,
-          ),
-        )
+                controller: _searchController,
+                autofocus: true,
+                onChanged: _updateSearchResults,
+                // style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: 'Search friend gifts...',
+                  hintStyle: TextStyle(color: Colors.white70),
+                  border: InputBorder.none,
+                ),
+              )
             : const Text('Home'),
         actions: [
           IconButton(
@@ -113,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                    const CreateEventScreen(),
+                                        const CreateEventScreen(),
                                   ),
                                 );
                               },
@@ -127,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                    const CreateNewWishlistScreen(),
+                                        const CreateNewWishlistScreen(),
                                   ),
                                 );
                               },
@@ -140,7 +170,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     // List of Friends/Items
                     SliverList(
                       delegate: SliverChildBuilderDelegate(
-                            (context, index) {
+                        (context, index) {
+                          User user = followedUsers[index];
+
                           return Container(
                             margin: const EdgeInsets.symmetric(
                                 vertical: 8, horizontal: 16),
@@ -163,9 +195,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 radius: 30,
                                 child: Icon(Icons.person, color: Colors.white),
                               ),
-                              title: const Text(
-                                'Friend Name',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                              title: Text(
+                                user.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                               subtitle: const Text(
                                 'Upcoming event: Yes',
@@ -179,14 +212,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) =>
-                                      const FriendDetailsScreen()),
+                                      builder: (context) => FriendDetailsScreen(
+                                            user: user,
+                                          )),
                                 );
                               },
                             ),
                           );
                         },
-                        childCount: 10,
+                        childCount: followedUsers.length,
                       ),
                     ),
                   ],
@@ -200,8 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-              const AddFriendsScreen(),
+              builder: (context) => const AddFriendsScreen(),
             ),
           );
         },
@@ -215,8 +248,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBigButton(BuildContext context,
       {required IconData icon,
-        required String label,
-        required VoidCallback onPressed}) {
+      required String label,
+      required VoidCallback onPressed}) {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
