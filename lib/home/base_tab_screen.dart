@@ -1,8 +1,10 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:hedieaty/home/home_screen/home_screen.dart';
 import 'package:hedieaty/home/my_wishlists_screen/my_wishlists_screen.dart';
 import 'package:hedieaty/home/profile_screen/profile_screen.dart';
 
+import '../notification_managet/notification_manager.dart';
 import 'my_events_screen/my_events_screen.dart';
 
 class BaseTabScreen extends StatefulWidget {
@@ -30,6 +32,42 @@ class _BaseTabScreenState extends State<BaseTabScreen> {
     MyWishlistScreen(),
     ProfileScreen(),
   ];
+
+  void _requestNotificationPermission() async {
+    NotificationSettings settings =
+        await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      print('User granted permission');
+    } else if (settings.authorizationStatus ==
+        AuthorizationStatus.provisional) {
+      print('User granted provisional permission');
+    } else {
+      print('User declined or has not accepted permission');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    NotificationManager.instance.configure().then((_) {
+      _requestNotificationPermission();
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    NotificationManager.instance.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
