@@ -89,20 +89,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )
             : const Text('Home'),
-        actions: [
-          IconButton(
-            icon: Icon(_isSearching ? Icons.close : Icons.search),
-            onPressed: () {
-              setState(() {
-                if (_isSearching) {
-                  _searchController.clear();
-                  filteredResults = searchResults; // Reset the search
-                }
-                _isSearching = !_isSearching;
-              });
-            },
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: Icon(_isSearching ? Icons.close : Icons.search),
+        //     onPressed: () {
+        //       setState(() {
+        //         if (_isSearching) {
+        //           _searchController.clear();
+        //           filteredResults = searchResults; // Reset the search
+        //         }
+        //         _isSearching = !_isSearching;
+        //       });
+        //     },
+        //   ),
+        // ],
       ),
       body: SafeArea(
         child: Column(
@@ -173,51 +173,71 @@ class _HomeScreenState extends State<HomeScreen> {
                         (context, index) {
                           User user = followedUsers[index];
 
-                          return Container(
-                            margin: const EdgeInsets.symmetric(
-                                vertical: 8, horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  spreadRadius: 1,
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
+                          return StreamBuilder(
+                            stream: FirebaseFirestore.instance
+                                .collection("events")
+                                .where("userId", isEqualTo: user.id)
+                                .where("date",
+                                    isGreaterThan: DateTime.now().toLocal())
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              String eventResult = snapshot.connectionState ==
+                                      ConnectionState.waiting
+                                  ? "..."
+                                  : snapshot.hasError ||
+                                          !snapshot.hasData ||
+                                          snapshot.data!.docs.isEmpty
+                                      ? "No"
+                                      : "Yes";
+                              return Container(
+                                margin: const EdgeInsets.symmetric(
+                                    vertical: 8, horizontal: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      spreadRadius: 1,
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              leading: const CircleAvatar(
-                                radius: 30,
-                                child: Icon(Icons.person, color: Colors.white),
-                              ),
-                              title: Text(
-                                user.name,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              subtitle: const Text(
-                                'Upcoming event: Yes',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                              trailing: const Icon(
-                                Icons.chevron_right,
-                                color: Colors.grey,
-                              ),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => FriendDetailsScreen(
-                                            user: user,
-                                          )),
-                                );
-                              },
-                            ),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  leading: const CircleAvatar(
+                                    radius: 30,
+                                    child:
+                                        Icon(Icons.person, color: Colors.white),
+                                  ),
+                                  title: Text(
+                                    user.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Text(
+                                    'Upcoming event: $eventResult',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                  trailing: const Icon(
+                                    Icons.chevron_right,
+                                    color: Colors.grey,
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              FriendDetailsScreen(
+                                                user: user,
+                                              )),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
                           );
                         },
                         childCount: followedUsers.length,
