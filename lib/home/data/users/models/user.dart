@@ -18,7 +18,6 @@ class User {
   // Convert User object to a Map for Firestore
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'name': name,
       'followers': followers,
       'email': email,
