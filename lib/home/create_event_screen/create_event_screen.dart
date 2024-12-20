@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:hedieaty/onboarding/managers/user_session_manager.dart';
 
 class CreateEventScreen extends StatefulWidget {
   const CreateEventScreen({super.key});
@@ -9,6 +11,10 @@ class CreateEventScreen extends StatefulWidget {
 
 class _CreateEventScreenState extends State<CreateEventScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  bool _isLoading = false;
 
   // Event data
   String _eventName = '';
@@ -33,9 +39,33 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   // Function to save the event data
-  void _saveEvent() async {
+  Future<void> _saveEvent() async {
     if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
       try {
+        // Get current user
+        final user = UserSessionManager.instance.getCurrentUser();
+        if (user == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('User not logged in')),
+          );
+          return;
+        }
+
+        // Create event object
+        final event = {
+          'name': _eventName,
+          'date': _eventDate,
+          'category': _eventCategory,
+          'userId': user.uid,
+          'createdAt': FieldValue.serverTimestamp(),
+        };
+
+        // Add event to Firestore
+        await _firestore.collection('events').add(event);
+
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Event successfully created!')),
@@ -47,6 +77,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to create event: $e')),
         );
+      } finally {
+        _isLoading = false;
       }
     }
   }
@@ -137,10 +169,12 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               const SizedBox(height: 40),
 
               // Save Button
-              ElevatedButton(
-                onPressed: _saveEvent,
-                child: const Text('Save Event'),
-              ),
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton(
+                      onPressed: _saveEvent,
+                      child: const Text('Save Event'),
+                    ),
             ],
           ),
         ),
