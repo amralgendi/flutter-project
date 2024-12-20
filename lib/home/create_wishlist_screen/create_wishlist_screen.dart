@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hedieaty/home/data/wishlists/models/gift.dart';
+import 'package:hedieaty/onboarding/managers/user_session_manager.dart';
 import 'package:uuid/uuid.dart';
 
 class CreateNewWishlistScreen extends StatefulWidget {
@@ -143,19 +145,44 @@ class _CreateNewWishlistScreenState extends State<CreateNewWishlistScreen> {
 
   // Function to create the wishlist
   void _createWishlist() async {
+    final firestore = FirebaseFirestore.instance;
     final wishlistName = _wishlistNameController.text;
-    final gifts = _giftControllers.map((controller) {
-      return Gift(
-        id: const Uuid().v4(),
-        name: controller.nameController.text,
-        imageBase64: controller.imageBase64,
-        description: controller.descriptionController.text,
-        price: double.tryParse(controller.priceController.text) ?? 0,
-        category: controller.selectedCategory,
-      );
-    }).toList();
 
     try {
+      final wishlistDoc = await firestore.collection("wishlists").add({
+        "name": wishlistName,
+        'userId': UserSessionManager.instance.getCurrentUser()!.uid
+      });
+
+      final gifts = _giftControllers.map((controller) {
+        return Gift(
+          id: const Uuid().v4(),
+          userId: UserSessionManager.instance.getCurrentUser()!.uid,
+          wishlistId: wishlistDoc.id,
+          name: controller.nameController.text,
+          imageBase64: controller.imageBase64,
+          description: controller.descriptionController.text,
+          price: double.tryParse(controller.priceController.text) ?? 0,
+          category: controller.selectedCategory,
+        );
+      }).toList();
+
+      final batch = firestore.batch();
+
+      for (Gift gift in gifts) {
+        DocumentReference ref = firestore.collection('gifts').doc();
+        batch.set(ref, gift.toMap());
+      }
+
+      try {
+        await batch.commit();
+
+        await wishlistDoc.update({"giftCount": gifts.length});
+      } catch (e) {
+        await wishlistDoc.delete();
+        rethrow;
+      }
+
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Wishlist Created Successfully!')),
