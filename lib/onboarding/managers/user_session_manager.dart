@@ -70,7 +70,7 @@ class UserSessionManager {
   }
 
   // Get the current logged-in user
-  Future<User?> getCurrentUser() async {
+  User? getCurrentUser() {
     try {
       return _firebaseAuth.currentUser;
     } catch (e) {

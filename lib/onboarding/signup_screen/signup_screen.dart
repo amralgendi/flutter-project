@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hedieaty/home/base_tab_screen.dart';
 import 'package:hedieaty/onboarding/managers/user_session_manager.dart';
-import 'package:provider/provider.dart';
 
 import '../login_screen/login_screen.dart';
 
