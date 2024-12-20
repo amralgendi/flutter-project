@@ -28,7 +28,7 @@ class NotificationManager {
     User? user = await UserSessionManager.instance.getCurrentUser();
 
     if (user != null) {
-      _tokenManager.deleteToken(user.uid);
+      _tokenManager.delete(user.uid);
     }
   }
 
