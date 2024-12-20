@@ -1,4 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:hedieaty/home/data/users/models/user.dart';
+import 'package:hedieaty/onboarding/managers/user_session_manager.dart';
 
 class AddFriendsScreen extends StatefulWidget {
   const AddFriendsScreen({super.key});
@@ -20,7 +23,7 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
   TextEditingController phoneNumberController = TextEditingController();
 
   // Add a contact manually
-  void _addManualContact() {
+  void _addManualContact() async {
     String phoneNumber = phoneNumberController.text.trim();
     if (phoneNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -28,8 +31,51 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
       );
       return;
     }
+
+    final userId = UserSessionManager.instance.getCurrentUser()!.uid;
+
+    final currentUserDoc =
+        await FirebaseFirestore.instance.collection("users").doc(userId).get();
+
+    final res = await FirebaseFirestore.instance
+        .collection('users')
+        .where("phoneNumber", isEqualTo: phoneNumber)
+        .get();
+
+    if (res.docs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No user with this phone number')),
+      );
+      return;
+    }
+
+    final foundUser = User.fromDocument(res.docs[0]);
+
+    if (foundUser.id == userId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Can\'t enter your own phone number')),
+      );
+      return;
+    }
+
+    final currentUser = User.fromDocument(currentUserDoc);
+
+    if (currentUser.followers.any((f) => f == foundUser.id)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Already added this user')),
+      );
+      return;
+    }
+    currentUser.followers.add(foundUser.id);
+
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUser.id)
+        .update(currentUser.toMap());
+
     setState(() {
-      contacts.add({"name": "Manual Friend", "phone": phoneNumber, "isAdded": true});
+      contacts.add(
+          {"name": "Manual Friend", "phone": phoneNumber, "isAdded": true});
       phoneNumberController.clear();
     });
     ScaffoldMessenger.of(context).showSnackBar(
@@ -103,22 +149,23 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
                     subtitle: Text(contact['phone']),
                     trailing: contact['isAdded']
                         ? const Text(
-                      'Added',
-                      style: TextStyle(color: Colors.green),
-                    )
+                            'Added',
+                            style: TextStyle(color: Colors.green),
+                          )
                         : ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          contact['isAdded'] = true;
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${contact['name']} added as a friend!'),
+                            onPressed: () {
+                              setState(() {
+                                contact['isAdded'] = true;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      '${contact['name']} added as a friend!'),
+                                ),
+                              );
+                            },
+                            child: const Text('Add'),
                           ),
-                        );
-                      },
-                      child: const Text('Add'),
-                    ),
                   );
                 },
               ),
