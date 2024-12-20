@@ -12,7 +12,10 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   // Dummy data for username
-  String username = "John Doe";
+  String username =
+      UserSessionManager.instance.getCurrentUser()?.displayName ?? '';
+  String phoneNumber =
+      UserSessionManager.instance.getCurrentUser()?.phoneNumber ?? '';
 
   // Method to show logout confirmation dialog
   Future<void> _showLogoutDialog() async {
@@ -39,7 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   MaterialPageRoute(
                     builder: (context) => const WelcomeScreen(),
                   ),
-                      (Route<dynamic> route) => false, // Remove all previous routes
+                  (Route<dynamic> route) => false, // Remove all previous routes
                 );
               },
               child: const Text('Logout'),
@@ -52,6 +55,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print("USERNAME: " + username);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
@@ -94,6 +99,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    Text(
+                      phoneNumber, // Use the dummy username
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -133,7 +145,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ListTile(
                     leading: const Icon(Icons.logout),
                     title: const Text('Logout'),
-                    onTap: _showLogoutDialog, // Show the logout confirmation dialog
+                    onTap:
+                        _showLogoutDialog, // Show the logout confirmation dialog
                   ),
                 ],
               ),

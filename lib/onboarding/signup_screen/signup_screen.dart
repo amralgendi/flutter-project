@@ -20,6 +20,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
+  bool _loading = false;
   @override
   void dispose() {
     _fullNameController.dispose();
@@ -118,51 +119,63 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     const SizedBox(height: 40),
                     // Sign-up Button or Loading Indicator
-                    ElevatedButton(
-                      onPressed: () async {
-                        try {
-                          var user = await UserSessionManager.instance
-                              .signUpWithEmailPassword(
-                            _emailController.text.trim(),
-                            _passwordController.text.trim(),
-                            {
-                              'fullName': _fullNameController.text.trim(),
-                              'email': _emailController.text.trim(),
-                              'phoneNumber': _phoneNumberController.text.trim(),
-                              'createdAt': FieldValue.serverTimestamp(),
-                            },
-                          );
+                    _loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : ElevatedButton(
+                            onPressed: () async {
+                              final userSessionManager =
+                                  UserSessionManager.instance;
 
-                          // Check if user was created successfully and proceed
-                          if (user != null) {
-                            // If the user is signed up, the user data is already saved in Firestore
-                            // through the `signUpWithEmailPassword` method in UserSessionManager
-                            _showSnackBar('Sign up successful!');
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const BaseTabScreen()),
-                              (Route<dynamic> route) => false,
-                            );
-                          } else {
-                            _showSnackBar('Sign up failed');
-                          }
-                        } catch (e) {
-                          _showSnackBar('Sign up failed: $e');
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        backgroundColor: Theme.of(context).primaryColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Sign Up',
-                        style: TextStyle(fontSize: 18, color: Colors.white),
-                      ),
-                    ),
+                              setState(() {
+                                _loading = true;
+                              });
+
+                              try {
+                                if (await userSessionManager.phoneNumberExists(
+                                    _phoneNumberController.text.trim())) {
+                                  _showSnackBar('Phone Number already Used');
+                                  return;
+                                }
+                                var user = userSessionManager.signUp(
+                                    _emailController.text.trim(),
+                                    _passwordController.text.trim(),
+                                    _fullNameController.text.trim(),
+                                    _phoneNumberController.text.trim());
+
+                                // Check if user was created successfully and proceed
+                                if (user != null) {
+                                  _showSnackBar('Sign up successful!');
+                                  Navigator.pushAndRemoveUntil(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            const BaseTabScreen()),
+                                    (Route<dynamic> route) => false,
+                                  );
+                                } else {
+                                  _showSnackBar('Sign up failed');
+                                }
+                              } catch (e) {
+                                _showSnackBar('Sign up failed: $e');
+                              } finally {
+                                setState(() {
+                                  _loading = false;
+                                });
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 50),
+                              backgroundColor: Theme.of(context).primaryColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              'Sign Up',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.white),
+                            ),
+                          ),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
