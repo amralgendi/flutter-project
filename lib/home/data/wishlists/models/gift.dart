@@ -9,6 +9,7 @@ class Gift {
   final String description;
   final double price;
   final String category;
+  final String? pledgedBy;
 
   Gift({
     required this.id,
@@ -19,6 +20,7 @@ class Gift {
     required this.description,
     required this.price,
     required this.category,
+    this.pledgedBy,
   });
 
   // Convert Gift object to a Map for Firestore
@@ -31,6 +33,7 @@ class Gift {
       'description': description,
       'price': price,
       'category': category,
+      'pledgedBy': pledgedBy
     };
   }
 
@@ -45,6 +48,7 @@ class Gift {
       description: data['description'],
       price: data['price'],
       category: data['category'],
+      pledgedBy: data['pledgedBy'],
     );
   }
 }

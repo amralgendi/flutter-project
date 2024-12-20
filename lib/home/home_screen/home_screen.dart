@@ -212,8 +212,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) =>
-                                          const FriendDetailsScreen()),
+                                      builder: (context) => FriendDetailsScreen(
+                                            user: user,
+                                          )),
                                 );
                               },
                             ),
