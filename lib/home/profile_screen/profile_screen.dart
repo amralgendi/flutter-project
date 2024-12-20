@@ -143,7 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) =>
-                                    const ProfileSettingsScreen(),
+                                    ProfileSettingsScreen(user: user),
                               ),
                             );
                           },
